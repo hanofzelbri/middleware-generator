@@ -9,7 +9,6 @@ import (
 	"go/types"
 	"os"
 	"strings"
-	"unicode"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/tools/go/loader"
@@ -97,72 +96,61 @@ func buildInterfaceFromProgram(prog *loader.Program, query *Query) (*Interface, 
 	}
 
 	pkg := prog.Imported[query.PackageName]
-	typ, err := interfaceTypeDefinition(pkg, query)
+	pos, err := interfaceTypeDefinitionPos(pkg, query)
 	if err != nil {
 		return nil, err
 	}
 
-	typFileName := prog.Fset.File(typ.Pos()).Name()
-	inter.Comment, err = interfaceComment(typFileName, query)
+	typFileName := prog.Fset.File(pos).Name()
+	decl, err := interfaceGenericDeclaration(typFileName, query)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, function := range interfaceFunctions(typ) {
-		sig, ok := function.Type().(*types.Signature)
-		if !ok {
-			continue
-		}
+	inter.Comment = commentGroupToString(decl.Doc)
 
-		params := sig.Params()
-		res := sig.Results()
-		fn := Func{
-			Name:       function.Name(),
-			Params:     make([]Param, params.Len()),
-			Res:        make([]Param, res.Len()),
-			IsVariadic: sig.Variadic(),
-		}
-
-		_ = fn // TODO: Implement filling of fn object
+	typ, err := interfaceTypeSpec(decl, query)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, nil
+	idecl, err := interfaceType(typ, query)
+	if err != nil {
+		return nil, err
+	}
+
+	inter.Functions, err = interfaceFunctions(idecl, query)
+	if err != nil {
+		return nil, err
+    }
+
+	return inter, nil
 }
 
-func interfaceTypeDefinition(pkg *loader.PackageInfo, query *Query) (typ *ast.TypeSpec, err error) {
-	for ident, obj := range pkg.Defs {
+func interfaceTypeDefinitionPos(pkg *loader.PackageInfo, query *Query) (token.Pos, error) {
+	for _, obj := range pkg.Defs {
 		if obj == nil ||
 			obj.Name() != query.InterfaceName ||
 			obj.Pkg().Path() != query.PackageName {
 			continue
 		}
 
-		t, ok := ident.Obj.Decl.(*ast.TypeSpec)
-		if !ok {
-			continue
+		_, ok := obj.Type().(*types.Named)
+		if ok {
+			return obj.Pos(), nil
 		}
-
-		_, ok = t.Type.(*ast.InterfaceType)
-		if !ok {
-			continue
-		}
-
-		typ = t
-		break
 	}
 
-	if typ == nil {
-		err = fmt.Errorf("Interface %q in package %q not found", query.InterfaceName, query.PackageName)
-	}
-
-	return
+	return token.Pos(-1), fmt.Errorf("Interface %q in package %q not found", query.InterfaceName, query.PackageName)
 }
 
-func interfaceComment(fileName string, query *Query) (string, error) {
+func interfaceGenericDeclaration(fileName string, query *Query) (*ast.GenDecl, error) {
+	var interfaceGenericDeclaration *ast.GenDecl
+
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, fileName, nil, parser.ParseComments)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	for _, decl := range file.Decls {
@@ -171,35 +159,101 @@ func interfaceComment(fileName string, query *Query) (string, error) {
 			continue
 		}
 
-		for _, spec := range decl.Specs {
-			typ := spec.(*ast.TypeSpec)
-			if typ.Name.Name == query.InterfaceName {
-				return decl.Doc.Text(), nil
-			}
+		if _, err := interfaceTypeSpec(decl, query); err != nil {
+			continue
+		}
+
+		interfaceGenericDeclaration = decl
+		break
+	}
+
+	if interfaceGenericDeclaration == nil {
+		return nil, fmt.Errorf("Interface generic declaration for interface %q in package %q not found", query.InterfaceName, query.PackageName)
+	}
+
+	return interfaceGenericDeclaration, nil
+}
+
+func interfaceTypeSpec(decl *ast.GenDecl, query *Query) (*ast.TypeSpec, error) {
+	for _, spec := range decl.Specs {
+		spec := spec.(*ast.TypeSpec)
+		if spec.Name.Name == query.InterfaceName {
+			return spec, nil
 		}
 	}
 
-	return "", fmt.Errorf("Comment for interface %q in package %q not found", query.InterfaceName, query.PackageName)
+	return nil, fmt.Errorf("No typespec found for interface %q in package %q", query.InterfaceName, query.PackageName)
 }
 
-func interfaceFunctions(typ *ast.TypeSpec) map[string]*types.Func {
-	functions := map[string]*types.Func{}
+func interfaceType(typ *ast.TypeSpec, query *Query) (*ast.InterfaceType, error) {
+	idecl, ok := typ.Type.(*ast.InterfaceType)
+	if !ok {
+		return nil, fmt.Errorf("Type for interface %q in package %q is not of type *ast.InterfaceType", query.InterfaceName, query.PackageName)
+	}
 
-	// for i := 0; i < typ.NumMethods(); i++ {
-	// 	m := typ.Method(i)
-
-	// 	if !isFunctionExported(m) && !unexported {
-	// 		continue
-	// 	}
-
-	// 	functions[m.Name()] = m
-	// }
-
-	return functions
+	return idecl, nil
 }
 
-func isFunctionExported(function *types.Func) bool {
-	return unicode.IsLower(rune(function.Name()[0]))
+func interfaceFunctions(idecl *ast.InterfaceType, query *Query) ([]Func, error) {
+	if idecl.Methods == nil {
+		return nil, fmt.Errorf("Interface %q in package %q is empty", query.InterfaceName, query.PackageName)
+	}
+
+	functions := []Func{}
+
+	for _, m := range idecl.Methods.List {
+		typ := m.Type.(*ast.FuncType)
+		functions = append(functions, Func{
+			Name:    m.Names[0].Name,
+			Comment: commentGroupToString(m.Comment),
+			Params:  interfaceFunctionFields(typ.Params),
+			Res:     interfaceFunctionFields(typ.Results),
+		})
+	}
+
+	return functions, nil
+}
+
+func interfaceFunctionFields(fields *ast.FieldList) []Param {
+	params := []Param{}
+
+	for _, field := range fields.List {
+		typ := interfaceFunctionFieldType(field.Type)
+
+		if len(field.Names) == 0 {
+			params = []Param{{Type: typ}}
+		}
+
+		for _, name := range field.Names {
+			params = append(params, Param{
+				Name: name.Name,
+				Type: typ,
+			})
+		}
+	}
+
+	return params
+}
+
+func interfaceFunctionFieldType(e ast.Expr) Type {
+	typ := Type{}
+
+	ast.Inspect(e, func(n ast.Node) bool {
+		switch n := n.(type) {
+		case *ast.StarExpr:
+			typ.IsPointer = true
+		case *ast.Ident:
+			if typ.Name != "" {
+				typ.Package = typ.Name
+				typ.Name = n.Name
+			} else {
+				typ.Name = n.Name
+			}
+		}
+		return true
+	})
+
+	return typ
 }
 
 func wrapperPackageName(wrapper string) string {
@@ -220,4 +274,18 @@ func wrapperStructName(wrapper string) string {
 	}
 
 	return structName
+}
+
+func commentGroupToString(commentGroup *ast.CommentGroup) string {
+	s := ""
+
+	if commentGroup == nil {
+		return s
+	}
+
+	for _, comment := range commentGroup.List {
+		s += fmt.Sprintf("%v\n", comment.Text)
+	}
+
+	return s
 }
