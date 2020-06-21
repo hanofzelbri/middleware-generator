@@ -22,9 +22,10 @@ type TestInterface1 interface {
 type EmptyInterface interface {
 }
 
-// EmptyMethodInterface is a dummy interface to test program
-type EmptyMethodInterface interface {
-	EmptyMethod(string) error
+// UnnammedParameters is a dummy interface to test program
+type UnnammedParametersInterface interface {
+	UnnammedParameters(string) error
+	WithoutReturn(string)
 }
 
 // ImportedParamTypeInterface is a dummy interface to test program
@@ -33,4 +34,18 @@ type ImportedParamTypeInterface interface {
 	PointerTypeParam(typ1 *ast.TypeSpec) *ast.InterfaceType
 	// Multiple params with same type
 	MultipleParamsWithSameType(typ1, typ2 *ast.TypeSpec, uuid1, uuid2 uuid.UUID) (ret1, ret2 *ast.InterfaceType)
+}
+
+// VariadicParamTypeInterface is a dummy interface to test program
+type VariadicParamTypeInterface interface {
+	// Variadic param type
+	VariadicFunction(prefix string, values ...int)
+}
+
+type fn func(int)
+
+// FuncTypeParamsInterface is a dummy interface to test program
+type FuncTypeParamsInterface interface {
+	// Variadic param type
+	FuncTypeParams(prefix string, f fn) func(string) error
 }
