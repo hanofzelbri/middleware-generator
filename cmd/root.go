@@ -261,6 +261,8 @@ func interfaceFunctionFieldType(e ast.Expr) Type {
 		switch n := n.(type) {
 		case *ast.StarExpr:
 			typ.IsPointer = true
+		case *ast.Ellipsis:
+			typ.IsVariadic = true
 		case *ast.Ident:
 			if typ.Name != "" {
 				typ.Package = typ.Name

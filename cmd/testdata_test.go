@@ -15,7 +15,7 @@ type TestInterface1 interface {
 	// Method2 is the second method of TestInterface1.
 	Method2(arg1 int, arg2 int) (result int, err error)
 	/* Method3 is the third method of TestInterface1.
-	 Continue comment for method */
+	Continue comment for method */
 	Method3(arg1 bool, arg2 bool) (result bool, err error)
 }
 
@@ -43,6 +43,8 @@ type ImportedParamTypeInterface interface {
 type VariadicParamTypeInterface interface {
 	// Variadic param type
 	VariadicFunction(prefix string, values ...int)
+	// Variadic param type
+	VariadicPointerFunction(values ...*int)
 }
 
 type fn func(int)

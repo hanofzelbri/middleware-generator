@@ -40,7 +40,7 @@ func (l *{{$.StructName}}) {{.Name}}({{range .Params}}{{.Name}} {{.Type}}, {{end
             Msg("Method {{.Name}} called")
     }(time.Now())
 
-    {{if .Res}}return{{end}} l.wrapper.{{.Name}}({{range .Params}}{{.Name}}, {{end}})
+    {{if .Res}}return{{end}} l.wrapper.{{.Name}}({{range .Params}}{{.Name}}{{if .Type.IsVariadic}}...{{end}}, {{end}})
 }
 {{end}}
 `

@@ -34,13 +34,18 @@ type Param struct {
 
 // Type represents a simple representation of a single parameter type
 type Type struct {
-	Name      string
-	Package   string
-	IsPointer bool
+	Name       string
+	Package    string
+	IsPointer  bool
+	IsVariadic bool
 }
 
 func (t *Type) String() string {
 	ret := ""
+
+	if t.IsVariadic {
+		ret += "..."
+	}
 
 	if t.IsPointer {
 		ret += "*"
