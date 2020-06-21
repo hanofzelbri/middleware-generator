@@ -12,6 +12,7 @@ type Interface struct {
 	Comment                string
 	PackageName            string
 	Functions              []Func
+	Imports                []Import
 	StructName             string
 	MiddleWareFunctionName string
 }
@@ -52,4 +53,10 @@ func (t *Type) String() string {
 	ret += t.Name
 
 	return ret
+}
+
+// Import defines imported package
+type Import struct {
+	Name string
+	Path string
 }

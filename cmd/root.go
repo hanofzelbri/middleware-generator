@@ -130,6 +130,12 @@ func buildInterfaceFromProgram(prog *loader.Program, query *Query) (*Interface, 
 		return nil, err
 	}
 
+	imports := pkg.Pkg.Imports()
+	inter.Imports, err = interfaceImports(imports, inter.Functions)
+	if err != nil {
+		return nil, err
+	}
+
 	return inter, nil
 }
 
@@ -301,6 +307,32 @@ func commentGroupToString(commentGroup *ast.CommentGroup) string {
 	}
 
 	return s
+}
+
+func interfaceImports(imports []*types.Package, interfaceFunctions []Func) ([]Import, error) {
+	interfaceImportsMap := map[string]Import{}
+
+	importPackages := make(map[string]Import, len(imports))
+	for _, i := range imports {
+		importPackages[i.Name()] = Import{Name: i.Name(), Path: i.Path()}
+	}
+
+	for _, f := range interfaceFunctions {
+		for _, p := range f.Params {
+			i, ok := importPackages[p.Type.Package]
+			if !ok {
+				return []Import{}, fmt.Errorf("Import type definition for package %q is not available", p.Type.Package)
+			}
+			interfaceImportsMap[p.Type.Package] = i
+		}
+	}
+
+	ret := []Import{}
+	for _, val := range interfaceImportsMap {
+		ret = append(ret, val)
+	}
+
+	return ret, nil
 }
 
 func printInterface(i *Interface) error {
