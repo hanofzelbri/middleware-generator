@@ -14,7 +14,8 @@ type TestInterface1 interface {
 	Method1(arg1 string, arg2 string) (result string, err error)
 	// Method2 is the second method of TestInterface1.
 	Method2(arg1 int, arg2 int) (result int, err error)
-	// Method3 is the third method of TestInterface1.
+	/* Method3 is the third method of TestInterface1.
+	 Continue comment for method */
 	Method3(arg1 bool, arg2 bool) (result bool, err error)
 }
 

@@ -26,7 +26,7 @@ func {{.MiddleWareFunctionName}}(wrapper {{.Name}}) {{.Name}} {
 }
 
 {{range .Functions}}
-{{if .Comment}}{{.Comment}}{{end}}
+{{if .Comment}}{{.Comment}}{{end -}}
 func (l *{{$.StructName}}) {{.Name}}({{range .Params}}{{.Name}} {{.Type}}, {{end}}) ({{range .Res}}{{.Name}} {{.Type}}, {{end}}) {
     defer func(begin time.Time) {
         log.Info().

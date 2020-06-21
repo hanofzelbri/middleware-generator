@@ -217,7 +217,7 @@ func interfaceFunctions(idecl *ast.InterfaceType, query *Query) ([]Func, error) 
 		typ := m.Type.(*ast.FuncType)
 		functions = append(functions, Func{
 			Name:    m.Names[0].Name,
-			Comment: commentGroupToString(m.Comment),
+			Comment: commentGroupToString(m.Doc),
 			Params:  interfaceFunctionFields(typ.Params, "param"),
 			Res:     interfaceFunctionFields(typ.Results, "ret"),
 		})
