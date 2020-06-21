@@ -33,10 +33,23 @@ type Param struct {
 
 // Type represents a simple representation of a single parameter type
 type Type struct {
-	Name        string
-	Package     string
-	ImportPath  string
-	IsPointer   bool
-	IsComposite bool
-	IsFunc      bool
+	Name      string
+	Package   string
+	IsPointer bool
+}
+
+func (t *Type) String() string {
+	ret := ""
+
+	if t.IsPointer {
+		ret += "*"
+	}
+
+	if t.Package != "" {
+		ret += t.Package + "."
+	}
+
+	ret += t.Name
+
+	return ret
 }
