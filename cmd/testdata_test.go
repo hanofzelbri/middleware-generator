@@ -24,8 +24,10 @@ type EmptyInterface interface {
 
 // UnnammedParameters is a dummy interface to test program
 type UnnammedParametersInterface interface {
-	UnnammedParameters(string) error
+	UnnammedParameter(string) error
+	UnnammedParameters(string, int, int, bool) (bool, string, int, error)
 	WithoutReturn(string)
+	EmptyMethod()
 }
 
 // ImportedParamTypeInterface is a dummy interface to test program
@@ -49,3 +51,8 @@ type FuncTypeParamsInterface interface {
 	// Variadic param type
 	FuncTypeParams(prefix string, f fn) func(string) error
 }
+
+// func Test_Test(t *testing.T) {
+// 	i := &importedParamTypeInterface{wrapper: &importedParamTypeInterface{}}
+// 	i.PointerTypeParam(nil)
+// }

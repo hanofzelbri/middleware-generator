@@ -218,23 +218,27 @@ func interfaceFunctions(idecl *ast.InterfaceType, query *Query) ([]Func, error) 
 		functions = append(functions, Func{
 			Name:    m.Names[0].Name,
 			Comment: commentGroupToString(m.Comment),
-			Params:  interfaceFunctionFields(typ.Params),
-			Res:     interfaceFunctionFields(typ.Results),
+			Params:  interfaceFunctionFields(typ.Params, "param"),
+			Res:     interfaceFunctionFields(typ.Results, "ret"),
 		})
 	}
 
 	return functions, nil
 }
 
-func interfaceFunctionFields(fields *ast.FieldList) []Param {
+func interfaceFunctionFields(fields *ast.FieldList, emptyParamPrefix string) []Param {
 	params := []Param{}
+
+	if fields == nil {
+		return params
+	}
 
 	for _, field := range fields.List {
 		typ := interfaceFunctionFieldType(field.Type)
 
 		if len(field.Names) == 0 {
 			params = append(params, Param{
-				Name: "field1",
+				Name: fmt.Sprintf("%v%v", emptyParamPrefix, len(params)+1),
 				Type: typ,
 			})
 		}
@@ -319,7 +323,13 @@ func interfaceImports(imports []*types.Package, interfaceFunctions []Func) ([]Im
 
 	for _, f := range interfaceFunctions {
 		for _, p := range f.Params {
-			i, ok := importPackages[p.Type.Package]
+			pkg := p.Type.Package
+
+			if pkg == "" {
+				continue
+			}
+
+			i, ok := importPackages[pkg]
 			if !ok {
 				return []Import{}, fmt.Errorf("Import type definition for package %q is not available", p.Type.Package)
 			}
