@@ -13,7 +13,7 @@ import (
     "github.com/rs/zerolog/log"
 )
 
-{{if .Comment}}{{.Comment}}{{end}}
+{{if .Comment}}{{.Comment}}{{end -}}
 type {{.StructName}} struct {
     wrapper {{.Name}}
 }
