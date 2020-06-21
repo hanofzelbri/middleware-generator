@@ -1,24 +1,29 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/token"
 	"go/types"
 	"os"
+	"path/filepath"
 	"strings"
+	"text/template"
+	"unicode"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/tools/go/loader"
 )
 
 var (
-	queryVar      string
-	wrapperVar    string
-	outputVar     string
-	unexportedVar bool
+	queryVar                  string
+	wrapperVar                string
+	outputVar                 string
+	middlewareFunctionNameVar string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -33,9 +38,12 @@ middleware with the zerolog logging library for an provided interface.`,
 			return err
 		}
 
-		_, err = buildInterface(q)
+		i, err := buildInterface(q)
+		if err != nil {
+			return err
+		}
 
-		return err
+		return printInterface(i)
 	},
 }
 
@@ -49,15 +57,12 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&queryVar, "interface", "i", "", "Interface to generate logging middleware for.")
+	rootCmd.PersistentFlags().StringVarP(&queryVar, "interface", "i", "", "Interface definition to generate logging middleware for.")
 	rootCmd.MarkPersistentFlagRequired("interface")
 
-	rootCmd.PersistentFlags().StringVarP(&outputVar, "output", "o", "", "Output file.")
-
-	rootCmd.PersistentFlags().StringVarP(&wrapperVar, "wrapper", "w", "", "Wrapper name for implementation of middleware interface.")
-	rootCmd.MarkPersistentFlagRequired("wrapper")
-
-	rootCmd.PersistentFlags().BoolVarP(&unexportedVar, "all", "a", false, "Include also unexported methods.")
+	rootCmd.PersistentFlags().StringVarP(&wrapperVar, "wrapper", "w", "", "Wrapper definition for implementation of middleware interface.")
+	rootCmd.PersistentFlags().StringVarP(&middlewareFunctionNameVar, "functionname", "f", "WithMiddleware", "Function name for middleware")
+	rootCmd.PersistentFlags().StringVarP(&outputVar, "output", "o", "", "Output file. If empty StdOut is used")
 }
 
 func validateInterfaceParam(query string) (*Query, error) {
@@ -90,9 +95,10 @@ func loadProgram(query *Query) (*loader.Program, error) {
 
 func buildInterfaceFromProgram(prog *loader.Program, query *Query) (*Interface, error) {
 	inter := &Interface{
-		Name:        query.InterfaceName,
-		PackageName: wrapperPackageName(wrapperVar),
-		StructName:  wrapperStructName(wrapperVar),
+		Name:                   query.InterfaceName,
+		PackageName:            wrapperPackageName(wrapperVar, query),
+		StructName:             wrapperStructName(wrapperVar, query),
+		MiddleWareFunctionName: middlewareFunctionNameVar,
 	}
 
 	pkg := prog.Imported[query.PackageName]
@@ -122,7 +128,7 @@ func buildInterfaceFromProgram(prog *loader.Program, query *Query) (*Interface, 
 	inter.Functions, err = interfaceFunctions(idecl, query)
 	if err != nil {
 		return nil, err
-    }
+	}
 
 	return inter, nil
 }
@@ -221,7 +227,10 @@ func interfaceFunctionFields(fields *ast.FieldList) []Param {
 		typ := interfaceFunctionFieldType(field.Type)
 
 		if len(field.Names) == 0 {
-			params = []Param{{Type: typ}}
+			params = append(params, Param{
+				Name: "field1",
+				Type: typ,
+			})
 		}
 
 		for _, name := range field.Names {
@@ -256,18 +265,22 @@ func interfaceFunctionFieldType(e ast.Expr) Type {
 	return typ
 }
 
-func wrapperPackageName(wrapper string) string {
-	packageName := ""
+func wrapperPackageName(wrapper string, query *Query) string {
+	packageName := query.PackageName
 
 	if i := strings.IndexRune(wrapper, '.'); i != -1 {
 		packageName = (wrapper)[:i]
 	}
 
-	return packageName
+	return filepath.Base(packageName)
 }
 
-func wrapperStructName(wrapper string) string {
+func wrapperStructName(wrapper string, query *Query) string {
 	structName := wrapper
+
+	if structName == "" {
+		structName = string(unicode.ToLower(rune(query.InterfaceName[0]))) + query.InterfaceName[1:]
+	}
 
 	if i := strings.IndexRune(wrapper, '.'); i != -1 {
 		structName = (wrapper)[i+1:]
@@ -288,4 +301,31 @@ func commentGroupToString(commentGroup *ast.CommentGroup) string {
 	}
 
 	return s
+}
+
+func printInterface(i *Interface) error {
+	buf := &bytes.Buffer{}
+	t := template.Must(template.New("tmpl").Parse(tmpl))
+	t.Execute(buf, i)
+
+	pretty, err := format.Source(buf.Bytes())
+	if err != nil {
+		os.Stderr.Write(buf.Bytes())
+		return err
+	}
+
+	f := os.Stdout
+	if outputVar != "" {
+		f, err = os.OpenFile(outputVar, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = f.Write(pretty)
+	if err != nil {
+		return err
+	}
+
+	return f.Close()
 }
