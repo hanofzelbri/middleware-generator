@@ -52,8 +52,3 @@ type FuncTypeParamsInterface interface {
 	// Variadic param type
 	FuncTypeParams(prefix string, f fn) func(string) error
 }
-
-// func Test_Test(t *testing.T) {
-// 	i := &importedParamTypeInterface{wrapper: &importedParamTypeInterface{}}
-// 	i.PointerTypeParam(nil)
-// }
