@@ -1,9 +1,20 @@
 package cmd
 
-// Query represents a named type request.
-type Query struct {
+import (
+	"go/token"
+
+	"golang.org/x/tools/go/loader"
+)
+
+// Options represents a named type request.
+type Options struct {
 	InterfaceName string
 	PackageName   string
+	Program       *loader.Program
+	PackageInfo   *loader.PackageInfo
+	FSet          *token.FileSet
+	EmptyFunctionParamNamePrefix string
+	EmptyFunctionReturnParamNamePrefix string
 }
 
 // Interface represents an interface signature
@@ -38,6 +49,7 @@ type Type struct {
 	Package    string
 	IsPointer  bool
 	IsVariadic bool
+	IsFunction bool
 }
 
 func (t *Type) String() string {

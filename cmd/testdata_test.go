@@ -47,10 +47,8 @@ type VariadicParamTypeInterface interface {
 	VariadicPointerFunction(values ...*int)
 }
 
-type fn func(int)
-
 // FuncTypeParamsInterface is a dummy interface to test program
 type FuncTypeParamsInterface interface {
-	// Variadic param type
-	FuncTypeParams(prefix string, f fn) func(string) error
+	// Function param type
+	FuncTypeParams(f func(int, int) int, a, b int) func(string) error
 }

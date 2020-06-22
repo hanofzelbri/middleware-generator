@@ -7,6 +7,7 @@ import (
 	"go/ast"
 	"go/format"
 	"go/parser"
+	"go/printer"
 	"go/token"
 	"go/types"
 	"os"
@@ -20,10 +21,12 @@ import (
 )
 
 var (
-	queryVar                  string
-	wrapperVar                string
-	outputVar                 string
-	middlewareFunctionNameVar string
+	queryVar                      string
+	wrapperVar                    string
+	outputVar                     string
+	middlewareFunctionNameVar     string
+	emptyFunctionParamNamePrefix  string
+	emptyFunctionReturnNamePrefix string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -33,12 +36,12 @@ var rootCmd = &cobra.Command{
 	Long: `This golang generator can be used to generate a logging
 middleware with the zerolog logging library for an provided interface.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		q, err := validateInterfaceParam(queryVar)
+		o, err := setupOptions(queryVar)
 		if err != nil {
 			return err
 		}
 
-		i, err := buildInterface(q)
+		i, err := buildInterface(o)
 		if err != nil {
 			return err
 		}
@@ -63,74 +66,82 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&wrapperVar, "wrapper", "w", "", "Wrapper definition for implementation of middleware interface.")
 	rootCmd.PersistentFlags().StringVarP(&middlewareFunctionNameVar, "functionname", "f", "WithMiddleware", "Function name for middleware")
 	rootCmd.PersistentFlags().StringVarP(&outputVar, "output", "o", "", "Output file. If empty StdOut is used")
+	rootCmd.PersistentFlags().StringVarP(&emptyFunctionParamNamePrefix, "emptyFunctionParamNamePrefix", "p", "param", "If there is no function parameter name provided this prefix will be used")
+	rootCmd.PersistentFlags().StringVarP(&emptyFunctionReturnNamePrefix, "emptyFunctionReturnNamePrefix", "r", "ret", "If there is no function parameter return name provided this prefix will be used")
 }
 
-func validateInterfaceParam(query string) (*Query, error) {
+func setupOptions(query string) (*Options, error) {
 	idx := strings.LastIndex(query, ".")
 	if idx == -1 || query[:idx] == "" || query[idx+1:] == "" {
 		return nil, errors.New("--interface (-i) flag should be like path/to/package.type")
 	}
 
-	return &Query{
-		InterfaceName: query[idx+1:],
-		PackageName:   query[:idx],
+	interfaceName := query[idx+1:]
+	packageName := query[:idx]
+
+	prog, err := loadProgram(packageName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Options{
+		InterfaceName:                      interfaceName,
+		PackageName:                        packageName,
+		Program:                            prog,
+		PackageInfo:                        prog.Imported[packageName],
+		FSet:                               prog.Fset,
+		EmptyFunctionParamNamePrefix:       emptyFunctionParamNamePrefix,
+		EmptyFunctionReturnParamNamePrefix: emptyFunctionReturnNamePrefix,
 	}, nil
 }
 
-func buildInterface(query *Query) (*Interface, error) {
-	prog, err := loadProgram(query)
-	i, err := buildInterfaceFromProgram(prog, query)
-	return i, err
-}
-
-func loadProgram(query *Query) (*loader.Program, error) {
+func loadProgram(packageName string) (*loader.Program, error) {
 	cfg := &loader.Config{
 		AllowErrors:         true,
-		ImportPkgs:          map[string]bool{query.PackageName: true},
+		ImportPkgs:          map[string]bool{packageName: true},
 		TypeCheckFuncBodies: func(string) bool { return false },
 	}
 
 	return cfg.Load()
 }
 
-func buildInterfaceFromProgram(prog *loader.Program, query *Query) (*Interface, error) {
+func buildInterface(options *Options) (*Interface, error) {
 	inter := &Interface{
-		Name:                   query.InterfaceName,
-		PackageName:            wrapperPackageName(wrapperVar, query),
-		StructName:             wrapperStructName(wrapperVar, query),
+		Name:                   options.InterfaceName,
+		PackageName:            wrapperPackageName(wrapperVar, options.PackageName),
+		StructName:             wrapperStructName(wrapperVar, options.InterfaceName),
 		MiddleWareFunctionName: middlewareFunctionNameVar,
 	}
 
-	pkg := prog.Imported[query.PackageName]
-	pos, err := interfaceTypeDefinitionPos(pkg, query)
+	pos, err := interfaceTypeDefinitionPos(options)
 	if err != nil {
 		return nil, err
 	}
 
-	typFileName := prog.Fset.File(pos).Name()
-	decl, err := interfaceGenericDeclaration(typFileName, query)
+	typFileName := options.FSet.File(pos).Name()
+	decl, err := interfaceGenericDeclaration(typFileName, options)
 	if err != nil {
 		return nil, err
 	}
 
 	inter.Comment = commentGroupToString(decl.Doc)
 
-	typ, err := interfaceTypeSpec(decl, query)
+	typ, err := interfaceTypeSpec(decl, options)
 	if err != nil {
 		return nil, err
 	}
 
-	idecl, err := interfaceType(typ, query)
+	idecl, err := interfaceType(typ, options)
 	if err != nil {
 		return nil, err
 	}
 
-	inter.Functions, err = interfaceFunctions(idecl, query)
+	inter.Functions, err = interfaceFunctions(idecl, options)
 	if err != nil {
 		return nil, err
 	}
 
-	imports := pkg.Pkg.Imports()
+	imports := options.PackageInfo.Pkg.Imports()
 	inter.Imports, err = interfaceImports(imports, inter.Functions)
 	if err != nil {
 		return nil, err
@@ -139,11 +150,11 @@ func buildInterfaceFromProgram(prog *loader.Program, query *Query) (*Interface, 
 	return inter, nil
 }
 
-func interfaceTypeDefinitionPos(pkg *loader.PackageInfo, query *Query) (token.Pos, error) {
-	for _, obj := range pkg.Defs {
+func interfaceTypeDefinitionPos(options *Options) (token.Pos, error) {
+	for _, obj := range options.PackageInfo.Defs {
 		if obj == nil ||
-			obj.Name() != query.InterfaceName ||
-			obj.Pkg().Path() != query.PackageName {
+			obj.Name() != options.InterfaceName ||
+			obj.Pkg().Path() != options.PackageName {
 			continue
 		}
 
@@ -153,10 +164,10 @@ func interfaceTypeDefinitionPos(pkg *loader.PackageInfo, query *Query) (token.Po
 		}
 	}
 
-	return token.Pos(-1), fmt.Errorf("Interface %q in package %q not found", query.InterfaceName, query.PackageName)
+	return token.Pos(-1), fmt.Errorf("Interface %q in package %q not found", options.InterfaceName, options.PackageName)
 }
 
-func interfaceGenericDeclaration(fileName string, query *Query) (*ast.GenDecl, error) {
+func interfaceGenericDeclaration(fileName string, options *Options) (*ast.GenDecl, error) {
 	var interfaceGenericDeclaration *ast.GenDecl
 
 	fset := token.NewFileSet()
@@ -171,7 +182,7 @@ func interfaceGenericDeclaration(fileName string, query *Query) (*ast.GenDecl, e
 			continue
 		}
 
-		if _, err := interfaceTypeSpec(decl, query); err != nil {
+		if _, err := interfaceTypeSpec(decl, options); err != nil {
 			continue
 		}
 
@@ -180,35 +191,35 @@ func interfaceGenericDeclaration(fileName string, query *Query) (*ast.GenDecl, e
 	}
 
 	if interfaceGenericDeclaration == nil {
-		return nil, fmt.Errorf("Interface generic declaration for interface %q in package %q not found", query.InterfaceName, query.PackageName)
+		return nil, fmt.Errorf("Interface generic declaration for interface %q in package %q not found", options.InterfaceName, options.PackageName)
 	}
 
 	return interfaceGenericDeclaration, nil
 }
 
-func interfaceTypeSpec(decl *ast.GenDecl, query *Query) (*ast.TypeSpec, error) {
+func interfaceTypeSpec(decl *ast.GenDecl, options *Options) (*ast.TypeSpec, error) {
 	for _, spec := range decl.Specs {
 		spec := spec.(*ast.TypeSpec)
-		if spec.Name.Name == query.InterfaceName {
+		if spec.Name.Name == options.InterfaceName {
 			return spec, nil
 		}
 	}
 
-	return nil, fmt.Errorf("No typespec found for interface %q in package %q", query.InterfaceName, query.PackageName)
+	return nil, fmt.Errorf("No typespec found for interface %q in package %q", options.InterfaceName, options.PackageName)
 }
 
-func interfaceType(typ *ast.TypeSpec, query *Query) (*ast.InterfaceType, error) {
+func interfaceType(typ *ast.TypeSpec, options *Options) (*ast.InterfaceType, error) {
 	idecl, ok := typ.Type.(*ast.InterfaceType)
 	if !ok {
-		return nil, fmt.Errorf("Type for interface %q in package %q is not of type *ast.InterfaceType", query.InterfaceName, query.PackageName)
+		return nil, fmt.Errorf("Type for interface %q in package %q is not of type *ast.InterfaceType", options.InterfaceName, options.PackageName)
 	}
 
 	return idecl, nil
 }
 
-func interfaceFunctions(idecl *ast.InterfaceType, query *Query) ([]Func, error) {
+func interfaceFunctions(idecl *ast.InterfaceType, options *Options) ([]Func, error) {
 	if idecl.Methods == nil {
-		return nil, fmt.Errorf("Interface %q in package %q is empty", query.InterfaceName, query.PackageName)
+		return nil, fmt.Errorf("Interface %q in package %q is empty", options.InterfaceName, options.PackageName)
 	}
 
 	functions := []Func{}
@@ -218,15 +229,15 @@ func interfaceFunctions(idecl *ast.InterfaceType, query *Query) ([]Func, error) 
 		functions = append(functions, Func{
 			Name:    m.Names[0].Name,
 			Comment: commentGroupToString(m.Doc),
-			Params:  interfaceFunctionFields(typ.Params, "param"),
-			Res:     interfaceFunctionFields(typ.Results, "ret"),
+			Params:  interfaceFunctionFields(typ.Params, options, options.EmptyFunctionParamNamePrefix),
+			Res:     interfaceFunctionFields(typ.Results, options, options.EmptyFunctionReturnParamNamePrefix),
 		})
 	}
 
 	return functions, nil
 }
 
-func interfaceFunctionFields(fields *ast.FieldList, emptyParamPrefix string) []Param {
+func interfaceFunctionFields(fields *ast.FieldList, options *Options, emptyFieldNamePrefix string) []Param {
 	params := []Param{}
 
 	if fields == nil {
@@ -234,11 +245,11 @@ func interfaceFunctionFields(fields *ast.FieldList, emptyParamPrefix string) []P
 	}
 
 	for _, field := range fields.List {
-		typ := interfaceFunctionFieldType(field.Type)
+		typ := interfaceFunctionFieldType(field.Type, options)
 
 		if len(field.Names) == 0 {
 			params = append(params, Param{
-				Name: fmt.Sprintf("%v%v", emptyParamPrefix, len(params)+1),
+				Name: fmt.Sprintf("%v%v", emptyFieldNamePrefix, len(params)+1),
 				Type: typ,
 			})
 		}
@@ -254,7 +265,7 @@ func interfaceFunctionFields(fields *ast.FieldList, emptyParamPrefix string) []P
 	return params
 }
 
-func interfaceFunctionFieldType(e ast.Expr) Type {
+func interfaceFunctionFieldType(e ast.Expr, options *Options) Type {
 	typ := Type{}
 
 	ast.Inspect(e, func(n ast.Node) bool {
@@ -263,6 +274,12 @@ func interfaceFunctionFieldType(e ast.Expr) Type {
 			typ.IsPointer = true
 		case *ast.Ellipsis:
 			typ.IsVariadic = true
+		case *ast.FuncType:
+			typ.IsFunction = true
+			var typeNameBuf bytes.Buffer
+			printer.Fprint(&typeNameBuf, options.FSet, n)
+			typ.Name = typeNameBuf.String()
+			return false
 		case *ast.Ident:
 			if typ.Name != "" {
 				typ.Package = typ.Name
@@ -277,9 +294,7 @@ func interfaceFunctionFieldType(e ast.Expr) Type {
 	return typ
 }
 
-func wrapperPackageName(wrapper string, query *Query) string {
-	packageName := query.PackageName
-
+func wrapperPackageName(wrapper string, packageName string) string {
 	if i := strings.IndexRune(wrapper, '.'); i != -1 {
 		packageName = (wrapper)[:i]
 	}
@@ -287,11 +302,11 @@ func wrapperPackageName(wrapper string, query *Query) string {
 	return filepath.Base(packageName)
 }
 
-func wrapperStructName(wrapper string, query *Query) string {
+func wrapperStructName(wrapper string, interfaceName string) string {
 	structName := wrapper
 
 	if structName == "" {
-		structName = string(unicode.ToLower(rune(query.InterfaceName[0]))) + query.InterfaceName[1:]
+		structName = string(unicode.ToLower(rune(interfaceName[0]))) + interfaceName[1:]
 	}
 
 	if i := strings.IndexRune(wrapper, '.'); i != -1 {
