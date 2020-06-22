@@ -34,7 +34,6 @@ type Func struct {
 	Params     []Param
 	Res        []Param
 	Comment    string
-	IsVariadic bool
 }
 
 // Param represents a parameter in a function or method signature
