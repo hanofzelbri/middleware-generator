@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "bitbucket.app.dmgmori.com/swscelosnext/dmgmori-helper-tools/dmgmori-logging-generator/cmd"
+import "github.com/hanofzelbri/middleware-generator/cmd"
 
 func main() {
 	cmd.Execute()

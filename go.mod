@@ -1,9 +1,9 @@
-module bitbucket.app.dmgmori.com/swscelosnext/dmgmori-helper-tools/dmgmori-logging-generator
+module github.com/hanofzelbri/middleware-generator
 
 go 1.14
 
 require (
 	github.com/google/uuid v1.1.1
 	github.com/spf13/cobra v1.0.0
-	golang.org/x/tools v0.0.0-20190328211700-ab21143f2384
+	golang.org/x/tools v0.0.0-20200623185156-456ad74e1464
 )

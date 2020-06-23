@@ -1,4 +1,4 @@
-package cmd
+package interfaces
 
 import (
 	"go/ast"
@@ -32,6 +32,7 @@ type UnnammedParametersInterface interface {
 }
 
 // ImportedParamTypeInterface is a dummy interface to test program
+/* Test comment */
 type ImportedParamTypeInterface interface {
 	// Pointer type param
 	PointerTypeParam(typ1 *ast.TypeSpec) *ast.InterfaceType
@@ -50,5 +51,19 @@ type VariadicParamTypeInterface interface {
 // FuncTypeParamsInterface is a dummy interface to test program
 type FuncTypeParamsInterface interface {
 	// Function param type
-	FuncTypeParams(f func(int, int) int, a, b int) func(string) error
+	FuncTypeParams(f func(int, *ast.MapType) int, a, b int) func(uuid.UUID) error
+}
+
+// CompositeParamsInterface is a dummy interface to test program
+type CompositeParamsInterface interface {
+	// Map param types
+	Map(map[string]uuid.UUID) map[bool]int
+	// Slice param types
+	Slice([]uuid.UUID, []int) []bool
+	// Array param types
+	Array(a [3]uuid.UUID) (r [10]bool)
+	// Channel param types
+	Channel(chan string) chan int
+	// Composite param types
+	Composite(m map[string]chan int, d [2]chan func(string) map[bool]*ast.MapType) []chan func(string) error
 }
