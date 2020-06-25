@@ -3,7 +3,7 @@ package interfaces
 import (
     "bytes"
     "go/format"
-    "html/template"
+    "text/template"
 )
 
 // InterfaceWrapperTemplate returns the filled template with Interface data
