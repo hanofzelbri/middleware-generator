@@ -20,17 +20,31 @@ var rootCmd = &cobra.Command{
 	Long: `This golang generator can be used to generate a logging
 middleware with the zerolog logging library for an provided interface.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		o, err := interfaces.SetupConfig(options)
+		i, err := interfaces.BuildInterface(options)
 		if err != nil {
 			return err
 		}
 
-		i, err := interfaces.BuildInterface(o)
+		template, err := interfaces.InterfaceWrapperTemplate(i)
 		if err != nil {
 			return err
 		}
 
-		return interfaces.PrintInterface(i, options.Output)
+		f := os.Stdout
+		if options.Output != "" {
+			f, err = os.OpenFile(options.Output, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0755)
+			if err != nil {
+				return err
+			}
+		}
+
+		_, err = f.Write(template)
+		if err != nil {
+			return err
+		}
+
+		return f.Close()
+
 	},
 }
 

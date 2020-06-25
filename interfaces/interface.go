@@ -5,11 +5,17 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
+	"sort"
 	"strings"
 )
 
 // BuildInterface creates an Interface object for provided options
-func BuildInterface(config *Config) (*Interface, error) {
+func BuildInterface(options Options) (*Interface, error) {
+	config, err := setupConfig(options)
+	if err != nil {
+		return nil, err
+	}
+
 	iface, ok := config.Object.Type().Underlying().(*types.Interface)
 	if !ok {
 		return nil, fmt.Errorf("Passed type name %q in package %q is not an interface", config.InterfaceName, config.Package.Path())
@@ -21,12 +27,44 @@ func BuildInterface(config *Config) (*Interface, error) {
 		Functions:              interfaceFunctions(config, iface),
 		WrapperStructName:      config.WrapperStructName,
 		WrapperPackageName:     config.WrapperPackageName,
-		MiddleWareFunctionName: config.options.MiddlewareFunctionName,
+		MiddleWareFunctionName: config.Options.MiddlewareFunctionName,
 	}
 
 	fixupInterface(inter)
 
 	return inter, nil
+}
+
+func setupConfig(options Options) (*Config, error) {
+	idx := strings.LastIndex(options.Query, ".")
+	if idx == -1 || options.Query[:idx] == "" || options.Query[idx+1:] == "" {
+		return nil, fmt.Errorf("--interface (-i) flag should be like path/to/package.type")
+	}
+
+	interfaceName := options.Query[idx+1:]
+	packageName := options.Query[:idx]
+
+	program, err := loadProgram(packageName)
+	if err != nil {
+		return nil, err
+	}
+
+	pkg := program.Package(packageName).Pkg
+	obj := pkg.Scope().Lookup(interfaceName)
+	if obj == nil {
+		return nil, fmt.Errorf("Interface %q not found in package %q", interfaceName, packageName)
+	}
+
+	return &Config{
+		InterfaceName:      interfaceName,
+		PackageName:        packageName,
+		Program:            program,
+		Package:            pkg,
+		Object:             obj,
+		WrapperStructName:  wrapperStructName(options.Wrapper, interfaceName),
+		WrapperPackageName: wrapperPackageName(options.Wrapper, packageName),
+		Options:            options,
+	}, nil
 }
 
 func commentText(config *Config, pos token.Pos) string {
@@ -73,8 +111,8 @@ func interfaceFunctions(config *Config, iface *types.Interface) []Func {
 		f := Func{
 			Name:       meth.Name(),
 			Comment:    commentText(config, meth.Pos()),
-			Params:     signatureVariables(sig.Params(), config.options.EmptyFunctionParamNamePrefix),
-			Res:        signatureVariables(sig.Results(), config.options.EmptyFunctionReturnParamNamePrefix),
+			Params:     signatureVariables(sig.Params(), config.Options.EmptyFunctionParamNamePrefix),
+			Res:        signatureVariables(sig.Results(), config.Options.EmptyFunctionReturnParamNamePrefix),
 			IsVariadic: sig.Variadic(),
 		}
 
@@ -169,7 +207,13 @@ func fixupInterface(inter *Interface) {
 		}
 	}
 
-	for _, i := range imports {
-		inter.Imports = append(inter.Imports, i)
+	keys := make([]string, 0, len(imports))
+	for k := range imports {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		inter.Imports = append(inter.Imports, imports[k])
 	}
 }
