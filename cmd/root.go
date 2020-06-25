@@ -23,7 +23,7 @@ middleware with the zerolog logging library for an provided interface.
 Either use it directly as binary or add it as comment for go:generate --> see examples
 
 For detected bugs please contact: marco-engstler@gmx.de`,
-	Example: `middleware-generator -i "io.Reader" -w "pkg.structname" -o "logging-middleware.go""
+	Example: `middleware-generator -i "io.Reader" -w "pkg.structname" -o "logging-middleware.go"
 middleware-generator -i "github.com/hanofzelbri/middleware-generator/interfaces.CompositeParamsInterface" -o "logging-middleware.go"
 
 //go:generate middleware-generator -i "github.com/hanofzelbri/middleware-generator/interfaces.CompositeParamsInterface" -o "logging-middleware.go"`,
