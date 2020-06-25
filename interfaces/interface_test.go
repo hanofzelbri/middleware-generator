@@ -113,8 +113,6 @@ func TestBuildInterface(t *testing.T) {
 			}
 
             got := string(b)
-            fmt.Println("Got:", got)
-            fmt.Println("Want:", tt.want)
 			if got != tt.want {
 				t.Errorf("BuildInterface() = %v, want %v", got, tt.want)
 			}
