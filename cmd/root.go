@@ -15,14 +15,18 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "dmgmori-logging-generator",
+	Use:   "middleware-generator",
 	Short: "Generates logging middleware for golang interface",
 	Long: `This golang generator can be used to generate a logging
 middleware with the zerolog logging library for an provided interface.
 
+Either use it directly as binary or add it as comment for go:generate --> see examples
+
 For detected bugs please contact: marco-engstler@gmx.de`,
 	Example: `middleware-generator -i "io.Reader" -w "pkg.structname" -o "logging-middleware.go""
-middleware-generator -i "github.com/hanofzelbri/middleware-generator/interfaces.CompositeParamsInterface" -o "logging-middleware.go"`,
+middleware-generator -i "github.com/hanofzelbri/middleware-generator/interfaces.CompositeParamsInterface" -o "logging-middleware.go"
+
+//go:generate middleware-generator -i "github.com/hanofzelbri/middleware-generator/interfaces.CompositeParamsInterface" -o "logging-middleware.go"`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i, err := interfaces.BuildInterface(options)
 		if err != nil {
