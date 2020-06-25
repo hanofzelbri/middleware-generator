@@ -202,7 +202,7 @@ func fixupInterface(inter *Interface) {
 		for ri, p := range f.Res {
 			for _, i := range p.Type.Imports {
 				imports[i.Path] = i
-				inter.Functions[fi].Params[ri].Type.Name = strings.ReplaceAll(p.Type.Name, i.Path, i.Package)
+				inter.Functions[fi].Res[ri].Type.Name = strings.ReplaceAll(p.Type.Name, i.Path, i.Package)
 			}
 		}
 	}
