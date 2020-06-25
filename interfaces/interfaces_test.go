@@ -63,7 +63,7 @@ type CompositeParamsInterface interface {
 	// Array param types
 	Array(a [3]uuid.UUID) (r [10]bool)
 	// Channel param types
-	Channel(chan string) chan int
+	Channel(chan string, <-chan bool, chan<- int) chan int
 	// Composite param types
 	Composite(m map[string]chan int, d [2]chan func(string) map[bool]*ast.MapType) []chan func(string) error
 }
