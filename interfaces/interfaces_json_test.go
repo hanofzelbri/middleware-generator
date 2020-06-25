@@ -257,7 +257,7 @@ var ImportedParamTypeInterfaceJSON = `{
         {
           "name": "typ1",
           "type": {
-            "name": "*ast.InterfaceType",
+            "name": "*ast.TypeSpec",
             "imports": [
               {
                 "package": "ast",
@@ -269,7 +269,7 @@ var ImportedParamTypeInterfaceJSON = `{
         {
           "name": "typ2",
           "type": {
-            "name": "*ast.InterfaceType",
+            "name": "*ast.TypeSpec",
             "imports": [
               {
                 "package": "ast",
@@ -307,7 +307,7 @@ var ImportedParamTypeInterfaceJSON = `{
         {
           "name": "ret1",
           "type": {
-            "name": "*go/ast.InterfaceType",
+            "name": "*ast.InterfaceType",
             "imports": [
               {
                 "package": "ast",
@@ -319,7 +319,7 @@ var ImportedParamTypeInterfaceJSON = `{
         {
           "name": "ret2",
           "type": {
-            "name": "*go/ast.InterfaceType",
+            "name": "*ast.InterfaceType",
             "imports": [
               {
                 "package": "ast",
@@ -337,7 +337,7 @@ var ImportedParamTypeInterfaceJSON = `{
         {
           "name": "typ1",
           "type": {
-            "name": "*ast.InterfaceType",
+            "name": "*ast.TypeSpec",
             "imports": [
               {
                 "package": "ast",
@@ -351,7 +351,7 @@ var ImportedParamTypeInterfaceJSON = `{
         {
           "name": "returnName1",
           "type": {
-            "name": "*go/ast.InterfaceType",
+            "name": "*ast.InterfaceType",
             "imports": [
               {
                 "package": "ast",
@@ -362,6 +362,40 @@ var ImportedParamTypeInterfaceJSON = `{
         }
       ],
       "comment": "// Pointer type param\n"
+    },
+    {
+      "name": "WithoutParameter",
+      "res": [
+        {
+          "name": "returnName1",
+          "type": {
+            "name": "*ast.InterfaceType",
+            "imports": [
+              {
+                "package": "ast",
+                "path": "go/ast"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "WithoutReturnParameter",
+      "params": [
+        {
+          "name": "paramName1",
+          "type": {
+            "name": "*ast.InterfaceType",
+            "imports": [
+              {
+                "package": "ast",
+                "path": "go/ast"
+              }
+            ]
+          }
+        }
+      ]
     }
   ],
   "imports": [
@@ -431,7 +465,7 @@ var FuncTypeParamsInterfaceJSON = `{
         {
           "name": "f",
           "type": {
-            "name": "func(uuid.UUID) error",
+            "name": "func(int, *ast.MapType) int",
             "imports": [
               {
                 "package": "ast",
@@ -457,7 +491,7 @@ var FuncTypeParamsInterfaceJSON = `{
         {
           "name": "returnName1",
           "type": {
-            "name": "func(github.com/google/uuid.UUID) error",
+            "name": "func(uuid.UUID) error",
             "imports": [
               {
                 "package": "uuid",
@@ -522,6 +556,18 @@ var CompositeParamsInterfaceJSON = `{
           "name": "paramName1",
           "type": {
             "name": "chan string"
+          }
+        },
+        {
+          "name": "paramName2",
+          "type": {
+            "name": "\u003c-chan bool"
+          }
+        },
+        {
+          "name": "paramName3",
+          "type": {
+            "name": "chan\u003c- int"
           }
         }
       ],
