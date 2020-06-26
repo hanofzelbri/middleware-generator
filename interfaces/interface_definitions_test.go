@@ -37,7 +37,7 @@ type ImportedParamTypeInterface interface {
 	// Pointer type param
 	PointerTypeParam(typ1 *ast.TypeSpec) *ast.InterfaceType
 	// Multiple params with same type
-	MultipleParamsWithSameType(typ1, typ2 *ast.TypeSpec, uuid1, uuid2 uuid.UUID) (ret1, ret2 *ast.InterfaceType)
+	MultipleParamsWithSameType(typ1, typ2 *ast.TypeSpec, uuid1, uuid2 uuid.UUID) (ret1, ret2 ast.InterfaceType)
 	WithoutParameter() *ast.InterfaceType
 	WithoutReturnParameter(*ast.InterfaceType)
 }

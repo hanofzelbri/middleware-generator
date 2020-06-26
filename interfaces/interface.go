@@ -153,10 +153,11 @@ func configureParamType(t *Type, typ types.Type) {
 		configureParamTypeName(t, typ.String())
 		configureParamType(t, typ.Elem())
 	case *types.Named:
-		configureParamTypeName(t, typ.Obj().Name())
 		if pkg := typ.Obj().Pkg(); pkg != nil {
+			configureParamTypeName(t, fmt.Sprintf("%v.%v", pkg.Name(), typ.Obj().Name()))
 			t.Imports = append(t.Imports, Import{Package: pkg.Name(), Path: pkg.Path()})
 		}
+		configureParamTypeName(t, typ.Obj().Name())
 	case *types.Slice:
 		configureParamTypeName(t, typ.String())
 		configureParamType(t, typ.Elem())

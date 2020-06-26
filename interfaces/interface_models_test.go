@@ -318,7 +318,7 @@ var ImportedParamTypeInterfaceInterface = &Interface{
 				{
 					Name: "uuid1",
 					Type: Type{
-						Name: "UUID",
+						Name: "uuid.UUID",
 						Imports: []Import{
 							{Package: "uuid", Path: "github.com/google/uuid"},
 						},
@@ -327,7 +327,7 @@ var ImportedParamTypeInterfaceInterface = &Interface{
 				{
 					Name: "uuid2",
 					Type: Type{
-						Name: "UUID",
+						Name: "uuid.UUID",
 						Imports: []Import{
 							{Package: "uuid", Path: "github.com/google/uuid"},
 						},
@@ -338,7 +338,7 @@ var ImportedParamTypeInterfaceInterface = &Interface{
 				{
 					Name: "ret1",
 					Type: Type{
-						Name: "*ast.InterfaceType",
+						Name: "ast.InterfaceType",
 						Imports: []Import{
 							{Package: "ast", Path: "go/ast"},
 						},
@@ -347,7 +347,7 @@ var ImportedParamTypeInterfaceInterface = &Interface{
 				{
 					Name: "ret2",
 					Type: Type{
-						Name: "*ast.InterfaceType",
+						Name: "ast.InterfaceType",
 						Imports: []Import{
 							{Package: "ast", Path: "go/ast"},
 						},
