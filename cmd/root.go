@@ -35,7 +35,7 @@ middleware-generator -i "github.com/hanofzelbri/middleware-generator/interfaces.
 
 		template, err := interfaces.InterfaceWrapperTemplate(i)
 		if err != nil {
-			return err
+			return fmt.Errorf("%v\n\nerr: %v", string(template), err)
 		}
 
 		f := os.Stdout
@@ -51,8 +51,13 @@ middleware-generator -i "github.com/hanofzelbri/middleware-generator/interfaces.
 			return err
 		}
 
-		return f.Close()
+		err = f.Close()
+		if err != nil {
+			return err
+		}
 
+		fmt.Printf("Successfully wrote middleware to %v\n", options.Output)
+		return nil
 	},
 }
 
