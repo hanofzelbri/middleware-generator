@@ -39,7 +39,7 @@ type ImportedParamTypeInterface interface {
 	// Multiple params with same type
 	MultipleParamsWithSameType(typ1, typ2 *ast.TypeSpec, uuid1, uuid2 uuid.UUID) (ret1, ret2 *ast.InterfaceType)
 	WithoutParameter() *ast.InterfaceType
-	WithoutReturnParameter(*ast.InterfaceType) 
+	WithoutReturnParameter(*ast.InterfaceType)
 }
 
 // VariadicParamTypeInterface is a dummy interface to test program
@@ -68,4 +68,12 @@ type CompositeParamsInterface interface {
 	Channel(chan string, <-chan bool, chan<- int) chan int
 	// Composite param types
 	Composite(m map[string]chan int, d [2]chan func(string) map[bool]*ast.MapType) []chan func(string) error
+}
+
+// EmbeddedInterface is a dummy interface to test program
+type EmbeddedInterface interface {
+	FuncTypeParamsInterface
+	VariadicParamTypeInterface
+	EmbeddedInterfaceEmptyFunc()
+	EmbeddedInterfaceFunc() string
 }
