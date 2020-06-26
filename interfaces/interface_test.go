@@ -1,12 +1,9 @@
 package interfaces
 
 import (
-	"encoding/json"
-	"fmt"
+	"reflect"
 	"testing"
 )
-
-
 
 func TestBuildInterface(t *testing.T) {
 	o := Options{
@@ -21,7 +18,7 @@ func TestBuildInterface(t *testing.T) {
 	tests := []struct {
 		name    string
 		options func() Options
-		want    string
+		want    *Interface
 		wantErr bool
 	}{
 		{
@@ -30,90 +27,81 @@ func TestBuildInterface(t *testing.T) {
 				o.Query = "io.Reader"
 				return o
 			},
-			want:    IoReaderJSON,
+			want:    ReaderInterface,
 			wantErr: false,
 		},
 		{
-            name: "github.com/hanofzelbri/middleware-generator/interfaces.TestInterface1",
+			name: "github.com/hanofzelbri/middleware-generator/interfaces.TestInterface1",
 			options: func() Options {
 				o.Query = "github.com/hanofzelbri/middleware-generator/interfaces.TestInterface1"
 				return o
 			},
-			want:    TestInterface1JSON,
+			want:    TestInterface1Interface,
 			wantErr: false,
 		},
 		{
-            name: "github.com/hanofzelbri/middleware-generator/interfaces.EmptyInterface",
+			name: "github.com/hanofzelbri/middleware-generator/interfaces.EmptyInterface",
 			options: func() Options {
 				o.Query = "github.com/hanofzelbri/middleware-generator/interfaces.EmptyInterface"
 				return o
 			},
-			want:    EmptyInterfaceJSON,
+			want:    EmptyInterfaceInterface,
 			wantErr: false,
 		},
 		{
-            name: "github.com/hanofzelbri/middleware-generator/interfaces.UnnammedParametersInterface",
+			name: "github.com/hanofzelbri/middleware-generator/interfaces.UnnammedParametersInterface",
 			options: func() Options {
 				o.Query = "github.com/hanofzelbri/middleware-generator/interfaces.UnnammedParametersInterface"
 				return o
 			},
-			want:    UnnammedParametersInterfaceJSON,
+			want:    UnnammedParametersInterfaceInterface,
 			wantErr: false,
 		},
 		{
-            name: "github.com/hanofzelbri/middleware-generator/interfaces.ImportedParamTypeInterface",
+			name: "github.com/hanofzelbri/middleware-generator/interfaces.ImportedParamTypeInterface",
 			options: func() Options {
 				o.Query = "github.com/hanofzelbri/middleware-generator/interfaces.ImportedParamTypeInterface"
 				return o
 			},
-			want:    ImportedParamTypeInterfaceJSON,
+			want:    ImportedParamTypeInterfaceInterface,
 			wantErr: false,
 		},
 		{
-            name: "github.com/hanofzelbri/middleware-generator/interfaces.VariadicParamTypeInterface",
+			name: "github.com/hanofzelbri/middleware-generator/interfaces.VariadicParamTypeInterface",
 			options: func() Options {
 				o.Query = "github.com/hanofzelbri/middleware-generator/interfaces.VariadicParamTypeInterface"
 				return o
 			},
-			want:    VariadicParamTypeInterfaceJSON,
+			want:    VariadicParamTypeInterfaceInterface,
 			wantErr: false,
 		},
 		{
-            name: "github.com/hanofzelbri/middleware-generator/interfaces.FuncTypeParamsInterface",
+			name: "github.com/hanofzelbri/middleware-generator/interfaces.FuncTypeParamsInterface",
 			options: func() Options {
 				o.Query = "github.com/hanofzelbri/middleware-generator/interfaces.FuncTypeParamsInterface"
 				return o
 			},
-			want:    FuncTypeParamsInterfaceJSON,
+			want:    FuncTypeParamsInterfaceInterface,
 			wantErr: false,
 		},
 		{
-            name: "github.com/hanofzelbri/middleware-generator/interfaces.CompositeParamsInterface",
+			name: "github.com/hanofzelbri/middleware-generator/interfaces.CompositeParamsInterface",
 			options: func() Options {
 				o.Query = "github.com/hanofzelbri/middleware-generator/interfaces.CompositeParamsInterface"
 				return o
 			},
-			want:    CompositeParamsInterfaceJSON,
+			want:    CompositeParamsInterfaceInterface,
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			i, err := BuildInterface(tt.options())
+			got, err := BuildInterface(tt.options())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BuildInterface() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-
-			b, err := json.MarshalIndent(i, "", "  ")
-			if err != nil {
-				fmt.Println(err)
-				t.Errorf("Marshalling interface error: %v", err)
-				return
-			}
-
-            got := string(b)
-			if got != tt.want {
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BuildInterface() = %v, want %v", got, tt.want)
 			}
 		})

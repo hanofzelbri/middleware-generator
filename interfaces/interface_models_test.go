@@ -8,7 +8,7 @@ var ReaderInterface = &Interface{
 			Name: "Read",
 			Params: []Param{
 				{
-					Name: "p2",
+					Name: "p",
 					Type: Type{
 						Name:    "[]byte",
 						Imports: nil,
