@@ -147,5 +147,4 @@ func (l *compositeParamsInterface) Slice(param1 []uuid.UUID, param2 []int) (ret1
 
     return l.wrapper.Slice(param1, param2)
 }
-
 ```
