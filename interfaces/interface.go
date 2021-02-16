@@ -30,7 +30,7 @@ func BuildInterface(options Options) (*Interface, error) {
 		MiddleWareFunctionName: config.Options.MiddlewareFunctionName,
 	}
 
-	fixupInterface(inter)
+	fixupInterface(inter, config)
 
 	return inter, nil
 }
@@ -186,7 +186,7 @@ func configureParamTypeName(t *Type, name string) {
 	}
 }
 
-func fixupInterface(inter *Interface) {
+func fixupInterface(inter *Interface, config *Config) {
 	imports := map[string]Import{}
 
 	for fi, f := range inter.Functions {
@@ -206,6 +206,16 @@ func fixupInterface(inter *Interface) {
 				inter.Functions[fi].Res[ri].Type.Name = strings.ReplaceAll(p.Type.Name, i.Path, i.Package)
 			}
 		}
+	}
+
+	if config.Package.Name() != config.WrapperPackageName {
+		i := Import{
+			Package: config.Package.Name(),
+			Path:    config.Package.Path(),
+		}
+
+		imports[config.Package.Path()] = i
+		inter.Name = fmt.Sprintf("%v.%v", i.Package, inter.Name)
 	}
 
 	keys := make([]string, 0, len(imports))

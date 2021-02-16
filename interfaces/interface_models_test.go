@@ -1,7 +1,7 @@
 package interfaces
 
 var ReaderInterface = &Interface{
-	Name:    "Reader",
+	Name:    "io.Reader",
 	Comment: "// Reader is the interface that wraps the basic Read method.\n//\n// Read reads up to len(p) bytes into p. It returns the number of bytes\n// read (0 <= n <= len(p)) and any error encountered. Even if Read\n// returns n < len(p), it may use all of p as scratch space during the call.\n// If some data is available but not len(p) bytes, Read conventionally\n// returns what is available instead of waiting for more.\n//\n// When Read encounters an error or end-of-file condition after\n// successfully reading n > 0 bytes, it returns the number of\n// bytes read. It may return the (non-nil) error from the same call\n// or return the error (and n == 0) from a subsequent call.\n// An instance of this general case is that a Reader returning\n// a non-zero number of bytes at the end of the input stream may\n// return either err == EOF or err == nil. The next Read should\n// return 0, EOF.\n//\n// Callers should always process the n > 0 bytes returned before\n// considering the error err. Doing so correctly handles I/O errors\n// that happen after reading some bytes and also both of the\n// allowed EOF behaviors.\n//\n// Implementations of Read are discouraged from returning a\n// zero byte count with a nil error, except when len(p) == 0.\n// Callers should treat a return of 0 and nil as indicating that\n// nothing happened; in particular it does not indicate EOF.\n//\n// Implementations must not retain p.\n",
 	Functions: []Func{
 		{
@@ -35,7 +35,7 @@ var ReaderInterface = &Interface{
 			IsVariadic: false,
 		},
 	},
-	Imports:                nil,
+	Imports:                []Import{{Package: "io", Path: "io"}},
 	WrapperPackageName:     "tests",
 	WrapperStructName:      "Wrapper",
 	MiddleWareFunctionName: "WithWrapper",
@@ -157,15 +157,15 @@ var TestInterface1Interface = &Interface{
 		},
 	},
 	Imports:                nil,
-	WrapperPackageName:     "tests",
-	WrapperStructName:      "Wrapper",
+	WrapperPackageName:     "interfaces",
+	WrapperStructName:      "testInterface1",
 	MiddleWareFunctionName: "WithWrapper",
 }
 var EmptyInterfaceInterface = &Interface{
-	Name:                   "EmptyInterface",
+	Name:                   "interfaces.EmptyInterface",
 	Comment:                "// EmptyInterface is a dummy interface to test program\n",
 	Functions:              []Func{},
-	Imports:                nil,
+	Imports:                []Import{{Package: "interfaces", Path: "github.com/hanofzelbri/middleware-generator/interfaces"}},
 	WrapperPackageName:     "tests",
 	WrapperStructName:      "Wrapper",
 	MiddleWareFunctionName: "WithWrapper",
@@ -286,8 +286,8 @@ var UnnammedParametersInterfaceInterface = &Interface{
 		},
 	},
 	Imports:                nil,
-	WrapperPackageName:     "tests",
-	WrapperStructName:      "Wrapper",
+	WrapperPackageName:     "interfaces",
+	WrapperStructName:      "unnammedParametersInterface",
 	MiddleWareFunctionName: "WithWrapper",
 }
 var ImportedParamTypeInterfaceInterface = &Interface{
@@ -423,8 +423,8 @@ var ImportedParamTypeInterfaceInterface = &Interface{
 		{Package: "uuid", Path: "github.com/google/uuid"},
 		{Package: "ast", Path: "go/ast"},
 	},
-	WrapperPackageName:     "tests",
-	WrapperStructName:      "Wrapper",
+	WrapperPackageName:     "interfaces",
+	WrapperStructName:      "importedParamTypeInterface",
 	MiddleWareFunctionName: "WithWrapper",
 }
 var VariadicParamTypeInterfaceInterface = &Interface{
@@ -470,8 +470,8 @@ var VariadicParamTypeInterfaceInterface = &Interface{
 		},
 	},
 	Imports:                nil,
-	WrapperPackageName:     "tests",
-	WrapperStructName:      "Wrapper",
+	WrapperPackageName:     "interfaces",
+	WrapperStructName:      "variadicParamTypeInterface",
 	MiddleWareFunctionName: "WithWrapper",
 }
 var FuncTypeParamsInterfaceInterface = &Interface{
@@ -524,10 +524,11 @@ var FuncTypeParamsInterfaceInterface = &Interface{
 		{Package: "uuid", Path: "github.com/google/uuid"},
 		{Package: "ast", Path: "go/ast"},
 	},
-	WrapperPackageName:     "tests",
-	WrapperStructName:      "Wrapper",
+	WrapperPackageName:     "interfaces",
+	WrapperStructName:      "funcTypeParamsInterface",
 	MiddleWareFunctionName: "WithWrapper",
 }
+
 var CompositeParamsInterfaceInterface = &Interface{
 	Name:    "CompositeParamsInterface",
 	Comment: "// CompositeParamsInterface is a dummy interface to test program\n",
@@ -688,7 +689,7 @@ var CompositeParamsInterfaceInterface = &Interface{
 		{Package: "uuid", Path: "github.com/google/uuid"},
 		{Package: "ast", Path: "go/ast"},
 	},
-	WrapperPackageName:     "tests",
-	WrapperStructName:      "Wrapper",
+	WrapperPackageName:     "interfaces",
+	WrapperStructName:      "compositeParamsInterface",
 	MiddleWareFunctionName: "WithWrapper",
 }

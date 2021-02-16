@@ -1,14 +1,14 @@
 package interfaces
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBuildInterface(t *testing.T) {
 	o := Options{
 		Query:                              "io.Reader",
-		Wrapper:                            "tests.Wrapper",
 		Output:                             "",
 		MiddlewareFunctionName:             "WithWrapper",
 		EmptyFunctionParamNamePrefix:       "paramName",
@@ -25,6 +25,7 @@ func TestBuildInterface(t *testing.T) {
 			name: "io.Reader",
 			options: func() Options {
 				o.Query = "io.Reader"
+				o.Wrapper = "tests.Wrapper"
 				return o
 			},
 			want:    ReaderInterface,
@@ -34,6 +35,7 @@ func TestBuildInterface(t *testing.T) {
 			name: "github.com/hanofzelbri/middleware-generator/interfaces.TestInterface1",
 			options: func() Options {
 				o.Query = "github.com/hanofzelbri/middleware-generator/interfaces.TestInterface1"
+				o.Wrapper = ""
 				return o
 			},
 			want:    TestInterface1Interface,
@@ -43,6 +45,7 @@ func TestBuildInterface(t *testing.T) {
 			name: "github.com/hanofzelbri/middleware-generator/interfaces.EmptyInterface",
 			options: func() Options {
 				o.Query = "github.com/hanofzelbri/middleware-generator/interfaces.EmptyInterface"
+				o.Wrapper = "tests.Wrapper"
 				return o
 			},
 			want:    EmptyInterfaceInterface,
@@ -52,6 +55,7 @@ func TestBuildInterface(t *testing.T) {
 			name: "github.com/hanofzelbri/middleware-generator/interfaces.UnnammedParametersInterface",
 			options: func() Options {
 				o.Query = "github.com/hanofzelbri/middleware-generator/interfaces.UnnammedParametersInterface"
+				o.Wrapper = ""
 				return o
 			},
 			want:    UnnammedParametersInterfaceInterface,
@@ -61,6 +65,7 @@ func TestBuildInterface(t *testing.T) {
 			name: "github.com/hanofzelbri/middleware-generator/interfaces.ImportedParamTypeInterface",
 			options: func() Options {
 				o.Query = "github.com/hanofzelbri/middleware-generator/interfaces.ImportedParamTypeInterface"
+				o.Wrapper = ""
 				return o
 			},
 			want:    ImportedParamTypeInterfaceInterface,
@@ -70,6 +75,7 @@ func TestBuildInterface(t *testing.T) {
 			name: "github.com/hanofzelbri/middleware-generator/interfaces.VariadicParamTypeInterface",
 			options: func() Options {
 				o.Query = "github.com/hanofzelbri/middleware-generator/interfaces.VariadicParamTypeInterface"
+				o.Wrapper = ""
 				return o
 			},
 			want:    VariadicParamTypeInterfaceInterface,
@@ -79,6 +85,7 @@ func TestBuildInterface(t *testing.T) {
 			name: "github.com/hanofzelbri/middleware-generator/interfaces.FuncTypeParamsInterface",
 			options: func() Options {
 				o.Query = "github.com/hanofzelbri/middleware-generator/interfaces.FuncTypeParamsInterface"
+				o.Wrapper = ""
 				return o
 			},
 			want:    FuncTypeParamsInterfaceInterface,
@@ -88,6 +95,7 @@ func TestBuildInterface(t *testing.T) {
 			name: "github.com/hanofzelbri/middleware-generator/interfaces.CompositeParamsInterface",
 			options: func() Options {
 				o.Query = "github.com/hanofzelbri/middleware-generator/interfaces.CompositeParamsInterface"
+				o.Wrapper = ""
 				return o
 			},
 			want:    CompositeParamsInterfaceInterface,
@@ -97,13 +105,8 @@ func TestBuildInterface(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := BuildInterface(tt.options())
-			if (err != nil) != tt.wantErr {
-				t.Errorf("BuildInterface() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BuildInterface() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, got)
+			assert.Equal(t, (err != nil), tt.wantErr)
 		})
 	}
 }
